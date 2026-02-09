@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Valentine?</title>
+  <style>
+    :root { --bg:#ffffff; --text:#1f2937; --yes:#22c55e; --no:#ef4444; }
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    body{
+      margin:0; min-height:100vh; display:grid; place-items:center;
+      background:var(--bg); color:var(--text);
+    }
+    .card{
+      width:min(720px,92vw);
+      padding:28px 18px 22px;
+      text-align:center;
+    }
+    h1{font-weight:650; margin:14px 0 18px; font-size:clamp(20px,3.6vw,34px);}
+    .sticker{font-size:64px; line-height:1; user-select:none;}
+    .arena{
+      position:relative;
+      width:min(640px,92vw);
+      height:260px;
+      margin:0 auto;
+    }
+    .btn{
+      border:none; cursor:pointer; color:white; font-weight:700;
+      border-radius:10px; padding:14px 22px; font-size:18px;
+      box-shadow:0 8px 20px rgba(0,0,0,.08);
+      transition:transform .15s ease, width .15s ease, height .15s ease, font-size .15s ease;
+      user-select:none;
+    }
+    #yesBtn{
+      background:var(--yes);
+      position:absolute; left:50%; top:120px; transform:translateX(-110%);
+      width:140px; height:56px;
+      font-size:22px;
+    }
+    #noBtn{
+      background:var(--no);
+      position:absolute; left:50%; top:120px; transform:translateX(10%);
+      width:140px; height:56px;
+      font-size:18px;
+      white-space:nowrap;
+      padding-inline:16px;
+    }
+    .hint{opacity:.75; font-size:13px; margin-top:10px;}
+    /* final screen */
+    .final{
+      display:none;
+      text-align:center;
+      padding:16px 0 0;
+    }
+    .final h2{margin:14px 0 8px; font-size:clamp(20px,3.6vw,36px);}
+    .shareRow{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px;}
+    .pill{
+      border:none; cursor:pointer; border-radius:12px;
+      padding:12px 16px; font-weight:700;
+      box-shadow:0 8px 20px rgba(0,0,0,.08);
+    }
+    .pill.blue{background:#60a5fa; color:white;}
+    .pill.pink{background:#ec4899; color:white;}
+    canvas#confetti{position:fixed; inset:0; pointer-events:none; display:none;}
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+
+  <div class="card" id="main">
+    <div class="sticker" id="sticker">🐻💐</div>
+    <h1 id="q">Will you be my valentine?</h1>
+
+    <div class="arena" id="arena">
+      <button class="btn" id="yesBtn">Yes</button>
+      <button class="btn" id="noBtn">No</button>
+    </div>
+
+    <div class="hint">Tip: try pressing “No” 😄</div>
+
+    <div class="final" id="final">
+      <div class="sticker">🧸🤍</div>
+      <h2 id="finalText">WOOOOOO!!! 💖</h2>
+      <div class="shareRow">
+        <button class="pill blue" id="shareBtn">Share Now ↗</button>
+        <button class="pill pink" id="copyBtn">Copy Link</button>
+      </div>
+      <div class="hint" id="copied" style="display:none;">Copied ✅</div>
+    </div>
+  </div>
+
+<script>
+  // --- Customize by link: ?name=Anshika ---
+  const params = new URLSearchParams(location.search);
+  const name = (params.get("name") || "You").trim();
+
+  const q = document.getElementById("q");
+  q.textContent = `${name} will you be my valentine?`;
+
+  const arena = document.getElementById("arena");
+  const yesBtn = document.getElementById("yesBtn");
+  const noBtn  = document.getElementById("noBtn");
+
+  // Phrases like the video (edit these!)
+  const noPhrases = [
+    "No",
+    "What if I gift you a diet coke?",
+    "Pretty please",
+    "With a packet of spicy ramen",
+    "What about a date?",
+    "I am going to die",
+    "No :(",
+  ];
+
+  let noCount = 0;
+
+  function rand(min, max){ return Math.random()*(max-min)+min; }
+
+  function moveNoButton() {
+    const rect = arena.getBoundingClientRect();
+    const btnRect = noBtn.getBoundingClientRect();
+
+    // keep inside arena
+    const pad = 10;
+    const maxX = rect.width - btnRect.width - pad;
+    const maxY = rect.height - btnRect.height - pad;
+
+    const x = Math.max(pad, Math.min(maxX, rand(pad, maxX)));
+    const y = Math.max(pad, Math.min(maxY, rand(pad, maxY)));
+
+    noBtn.style.left = x + "px";
+    noBtn.style.top  = y + "px";
+    noBtn.style.transform = "none";
+  }
+
+  function growYes() {
+    // makes Yes bigger each time, like your video
+    const baseW = 140, baseH = 56;
+    const grow = Math.min(1 + noCount * 0.35, 4.2);
+
+    yesBtn.style.width  = (baseW * grow) + "px";
+    yesBtn.style.height = (baseH * grow) + "px";
+    yesBtn.style.fontSize = (22 * Math.min(grow, 3.2)) + "px";
+  }
+
+  // Make "No" hard to click on mobile too:
+  // - on hover (desktop) + on touchstart/click (mobile), it moves
+  noBtn.addEventListener("mouseenter", () => {
+    noCount++;
+    noBtn.textContent = noPhrases[Math.min(noCount, noPhrases.length-1)];
+    moveNoButton();
+    growYes();
+  });
+
+  noBtn.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    noCount++;
+    noBtn.textContent = noPhrases[Math.min(noCount, noPhrases.length-1)];
+    moveNoButton();
+    growYes();
+  }, {passive:false});
+
+  noBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    noCount++;
+    noBtn.textContent = noPhrases[Math.min(noCount, noPhrases.length-1)];
+    moveNoButton();
+    growYes();
+  });
+
+  // YES click => final screen
+  const final = document.getElementById("final");
+  const finalText = document.getElementById("finalText");
+
+  yesBtn.addEventListener("click", () => {
+    arena.style.display = "none";
+    document.querySelector(".hint").style.display = "none";
+    final.style.display = "block";
+    finalText.textContent = `WOOOOOO!!! I love you, ${name} 💖💖`;
+
+    startConfetti();
+  });
+
+  // Share / Copy
+  const shareBtn = document.getElementById("shareBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const copied = document.getElementById("copied");
+
+  shareBtn.addEventListener("click", async () => {
+    const url = location.href;
+    if (navigator.share) {
+      try { await navigator.share({ title:"Valentine?", text:"Open this 👀", url }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      copied.style.display = "block";
+      setTimeout(()=>copied.style.display="none", 1200);
+    }
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(location.href);
+    copied.style.display = "block";
+    setTimeout(()=>copied.style.display="none", 1200);
+  });
+
+  // --- Simple confetti (no libraries) ---
+  function startConfetti(){
+    const c = document.getElementById("confetti");
+    const ctx = c.getContext("2d");
+    c.style.display = "block";
+
+    function resize(){ c.width = innerWidth; c.height = innerHeight; }
+    resize(); addEventListener("resize", resize);
+
+    const pieces = Array.from({length:180}, () => ({
+      x: Math.random()*c.width,
+      y: -20 - Math.random()*c.height,
+      r: 2 + Math.random()*4,
+      s: 1 + Math.random()*3.5,
+      a: Math.random()*Math.PI*2,
+      w: 0.5 + Math.random()*1.5,
+    }));
+
+    let t = 0;
+    (function loop(){
+      t += 0.02;
+      ctx.clearRect(0,0,c.width,c.height);
+      for (const p of pieces){
+        p.y += p.s;
+        p.x += Math.sin(t + p.a) * p.w;
+        if (p.y > c.height + 20) p.y = -20;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+      requestAnimationFrame(loop);
+    })();
+  }
+</script>
+</body>
+</html>
